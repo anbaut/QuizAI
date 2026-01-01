@@ -26,6 +26,54 @@ const LM_URL = "http://localhost:1234/v1/chat/completions";
 const rooms = new Map();
 const players = new Map();
 
+// Broadcast rooms list to all connected clients
+function broadcastRoomsList() {
+  const roomsList = Array.from(rooms.values()).map(room => ({
+    id: room.id,
+    name: room.name,
+    difficulty: room.difficulty,
+    categories: room.categories,
+    players: room.players.length,
+    maxPlayers: room.maxPlayers,
+    gameStarted: room.gameStarted
+  })).filter(room => !room.gameStarted);
+  
+  io.emit('rooms-list', roomsList);
+}
+
+// Clean up rooms older than 20 minutes
+function cleanupOldRooms() {
+  const twentyMinutesAgo = Date.now() - (20 * 60 * 1000);
+  let deletedCount = 0;
+  
+  rooms.forEach((room, roomId) => {
+    if (room.createdAt && room.createdAt < twentyMinutesAgo) {
+      // Notify all players in the room
+      io.to(roomId).emit('room-deleted', { message: 'La salle a été automatiquement supprimée après 20 minutes.' });
+      
+      // Remove players from room
+      room.players.forEach(player => {
+        const playerData = players.get(player.id);
+        if (playerData) {
+          playerData.roomId = null;
+        }
+      });
+      
+      // Delete the room
+      rooms.delete(roomId);
+      deletedCount++;
+      console.log(`🗑️ Salle supprimée (20 min): ${room.name}`);
+    }
+  });
+  
+  if (deletedCount > 0) {
+    broadcastRoomsList();
+  }
+}
+
+// Run cleanup every minute
+setInterval(cleanupOldRooms, 60000);
+
 app.post("/api/question", async (req, res) => {
   const { category, difficulty } = req.body;
 
@@ -109,7 +157,8 @@ io.on('connection', (socket) => {
       gameStarted: false,
       currentQuestion: null,
       questionCount: 0,
-      maxQuestions: 5
+      maxQuestions: 5,
+      createdAt: Date.now()
     };
 
     rooms.set(roomId, room);
@@ -117,6 +166,9 @@ io.on('connection', (socket) => {
     
     // Auto-join creator
     socket.emit('join-room', roomId);
+    
+    // Broadcast updated rooms list to all clients
+    broadcastRoomsList();
     
     console.log(`🚪 Salle créée: ${config.name} (${roomId})`);
   });
@@ -168,6 +220,7 @@ io.on('connection', (socket) => {
 
     socket.emit('room-joined', room);
     io.to(roomId).emit('room-updated', room);
+    broadcastRoomsList();
     
     console.log(`👥 ${player.name} a rejoint ${room.name}`);
   });
@@ -185,14 +238,18 @@ io.on('connection', (socket) => {
       if (room.host === socket.id) {
         if (room.players.length > 0) {
           room.host = room.players[0].id;
+          io.to(player.roomId).emit('room-updated', room);
+          broadcastRoomsList();
         } else {
           rooms.delete(player.roomId);
           console.log(`🚪 Salle supprimée: ${room.name}`);
-          return;
+          broadcastRoomsList();
         }
+      } else {
+        io.to(player.roomId).emit('room-updated', room);
+        broadcastRoomsList();
       }
       
-      io.to(player.roomId).emit('room-updated', room);
       console.log(`👋 ${player.name} a quitté ${room.name}`);
     }
     
@@ -288,12 +345,16 @@ io.on('connection', (socket) => {
         if (room.host === socket.id) {
           if (room.players.length > 0) {
             room.host = room.players[0].id;
+            io.to(player.roomId).emit('room-updated', room);
+            broadcastRoomsList();
           } else {
             rooms.delete(player.roomId);
+            broadcastRoomsList();
           }
+        } else {
+          io.to(player.roomId).emit('room-updated', room);
+          broadcastRoomsList();
         }
-        
-        io.to(player.roomId).emit('room-updated', room);
       }
     }
     
