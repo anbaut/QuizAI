@@ -238,17 +238,18 @@ io.on('connection', (socket) => {
       if (room.host === socket.id) {
         if (room.players.length > 0) {
           room.host = room.players[0].id;
+          io.to(player.roomId).emit('room-updated', room);
+          broadcastRoomsList();
         } else {
           rooms.delete(player.roomId);
           console.log(`🚪 Salle supprimée: ${room.name}`);
           broadcastRoomsList();
-          player.roomId = null;
-          return;
         }
+      } else {
+        io.to(player.roomId).emit('room-updated', room);
+        broadcastRoomsList();
       }
       
-      io.to(player.roomId).emit('room-updated', room);
-      broadcastRoomsList();
       console.log(`👋 ${player.name} a quitté ${room.name}`);
     }
     
@@ -344,14 +345,16 @@ io.on('connection', (socket) => {
         if (room.host === socket.id) {
           if (room.players.length > 0) {
             room.host = room.players[0].id;
+            io.to(player.roomId).emit('room-updated', room);
+            broadcastRoomsList();
           } else {
             rooms.delete(player.roomId);
             broadcastRoomsList();
           }
+        } else {
+          io.to(player.roomId).emit('room-updated', room);
+          broadcastRoomsList();
         }
-        
-        io.to(player.roomId).emit('room-updated', room);
-        broadcastRoomsList();
       }
     }
     
