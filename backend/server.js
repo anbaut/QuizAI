@@ -162,7 +162,8 @@ io.on('connection', (socket) => {
     room.players.push({
       id: player.id,
       name: player.name,
-      score: player.score
+      score: player.score,
+      hasAnswered: false
     });
 
     socket.emit('room-joined', room);
@@ -207,9 +208,13 @@ io.on('connection', (socket) => {
 
     room.gameStarted = true;
     room.questionCount = 0;
+    room.nextQuestionScheduled = false;
     
-    // Reset scores
-    room.players.forEach(p => p.score = 0);
+    // Reset scores and answer flags
+    room.players.forEach(p => {
+      p.score = 0;
+      p.hasAnswered = false;
+    });
     
     io.to(room.id).emit('game-started');
     console.log(`🎮 Jeu démarré dans ${room.name}`);
@@ -225,14 +230,17 @@ io.on('connection', (socket) => {
     const room = rooms.get(player.roomId);
     if (!room || !room.currentQuestion) return;
 
+    // Prevent multiple submissions by checking if player already answered
+    const roomPlayer = room.players.find(p => p.id === socket.id);
+    if (roomPlayer.hasAnswered) return;
+    
+    roomPlayer.hasAnswered = true;
+
     const correct = checkAnswer(answer, room.currentQuestion.answer);
     
     if (correct) {
-      const roomPlayer = room.players.find(p => p.id === socket.id);
-      if (roomPlayer) {
-        roomPlayer.score += 10;
-        player.score += 10;
-      }
+      roomPlayer.score += 10;
+      player.score += 10;
     }
 
     socket.emit('answer-result', {
@@ -243,20 +251,31 @@ io.on('connection', (socket) => {
     // Update room for all players
     io.to(room.id).emit('room-updated', room);
 
-    // Send next question after a delay
-    setTimeout(async () => {
-      room.questionCount++;
+    // Check if all players have answered
+    const allAnswered = room.players.every(p => p.hasAnswered);
+    
+    // If all answered or this is the first answer, schedule next question
+    if (!room.nextQuestionScheduled) {
+      room.nextQuestionScheduled = true;
       
-      if (room.questionCount >= room.maxQuestions) {
-        // Game ended
-        const results = room.players.sort((a, b) => b.score - a.score);
-        io.to(room.id).emit('game-ended', results);
-        room.gameStarted = false;
-        console.log(`🏆 Jeu terminé dans ${room.name}`);
-      } else {
-        await sendNextQuestion(room);
-      }
-    }, 3000);
+      setTimeout(async () => {
+        room.questionCount++;
+        room.nextQuestionScheduled = false;
+        
+        // Reset hasAnswered flag for all players
+        room.players.forEach(p => p.hasAnswered = false);
+        
+        if (room.questionCount >= room.maxQuestions) {
+          // Game ended
+          const results = room.players.sort((a, b) => b.score - a.score);
+          io.to(room.id).emit('game-ended', results);
+          room.gameStarted = false;
+          console.log(`🏆 Jeu terminé dans ${room.name}`);
+        } else {
+          await sendNextQuestion(room);
+        }
+      }, allAnswered ? 2000 : 5000); // 2s if all answered, 5s timeout otherwise
+    }
   });
 
   socket.on('disconnect', () => {

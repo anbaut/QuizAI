@@ -1,5 +1,5 @@
-// Initialize Socket.io
-const socket = io('http://localhost:3000');
+// Initialize Socket.io - use relative URL for better portability
+const socket = io();
 
 // Connection status
 const connectionStatus = document.getElementById('connection-status');
@@ -53,7 +53,7 @@ generateBtn.onclick = async () => {
   const difficulty = document.getElementById("difficulty").value;
 
   try {
-    const res = await fetch("http://localhost:3000/api/question", {
+    const res = await fetch("/api/question", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ category, difficulty })
