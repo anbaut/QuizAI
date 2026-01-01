@@ -2,36 +2,175 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Quiz IA – POC</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quiz IA – Multijoueur</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div class="container">
+    <h1>🎯 Quiz IA Multijoueur</h1>
 
-  <h1>Quiz IA (POC)</h1>
+    <!-- Connection Status -->
+    <div id="connection-status" class="connection-status disconnected">
+      ⚠️ Connexion au serveur...
+    </div>
 
-  <div class="controls">
-    <select id="category">
-      <option>Culture générale</option>
-      <option>Science</option>
-      <option>Pop culture</option>
-    </select>
+    <!-- Mode Selection -->
+    <div class="mode-selector">
+      <div class="mode-buttons">
+        <button class="mode-btn active" id="solo-mode-btn">🎮 Mode Solo</button>
+        <button class="mode-btn" id="multi-mode-btn">👥 Mode Multijoueur</button>
+      </div>
+    </div>
 
-    <select id="difficulty">
-      <option>Facile</option>
-      <option>Moyen</option>
-      <option>Difficile</option>
-    </select>
+    <!-- Solo Mode -->
+    <div id="solo-mode">
+      <div class="controls">
+        <h3>Configuration du Quiz</h3>
+        <div class="control-group">
+          <label for="category">Catégorie :</label>
+          <select id="category">
+            <option>Culture générale</option>
+            <option>Science</option>
+            <option>Histoire</option>
+            <option>Géographie</option>
+            <option>Sport</option>
+            <option>Cinéma</option>
+            <option>Musique</option>
+            <option>Littérature</option>
+            <option>Technologie</option>
+            <option>Art</option>
+            <option>Nature</option>
+            <option>Cuisine</option>
+          </select>
+        </div>
 
-    <button id="generate">Générer une question</button>
+        <div class="control-group">
+          <label for="difficulty">Difficulté :</label>
+          <select id="difficulty">
+            <option>Facile</option>
+            <option>Moyen</option>
+            <option>Difficile</option>
+          </select>
+        </div>
+
+        <button id="generate" class="btn-primary">🎲 Générer une question</button>
+      </div>
+
+      <div id="question-box" class="hidden">
+        <h2 id="question"></h2>
+        <div id="answers"></div>
+        <button id="show-answer" class="btn-secondary">👁️ Voir la réponse</button>
+        <p id="solution" class="hidden"></p>
+      </div>
+    </div>
+
+    <!-- Multiplayer Mode -->
+    <div id="multi-mode" class="hidden">
+      <!-- Player Name Setup -->
+      <div id="player-setup" class="controls">
+        <h3>Entrez votre nom</h3>
+        <div class="control-group">
+          <label for="player-name">Nom du joueur :</label>
+          <input type="text" id="player-name" placeholder="Votre nom..." />
+        </div>
+        <button id="set-player-name" class="btn-primary">✅ Valider</button>
+      </div>
+
+      <!-- Lobby -->
+      <div id="lobby" class="hidden">
+        <div class="controls">
+          <h3>Créer une salle</h3>
+          <div class="control-group">
+            <label for="room-name">Nom de la salle :</label>
+            <input type="text" id="room-name" placeholder="Ma salle de quiz..." />
+          </div>
+          
+          <div class="control-group">
+            <label for="room-difficulty">Difficulté :</label>
+            <select id="room-difficulty">
+              <option>Facile</option>
+              <option>Moyen</option>
+              <option>Difficile</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label>Catégories autorisées :</label>
+            <div class="category-grid">
+              <input type="checkbox" id="cat-culture" class="category-checkbox" value="Culture générale" checked />
+              <label for="cat-culture" class="category-label">Culture générale</label>
+              
+              <input type="checkbox" id="cat-science" class="category-checkbox" value="Science" checked />
+              <label for="cat-science" class="category-label">Science</label>
+              
+              <input type="checkbox" id="cat-histoire" class="category-checkbox" value="Histoire" checked />
+              <label for="cat-histoire" class="category-label">Histoire</label>
+              
+              <input type="checkbox" id="cat-geo" class="category-checkbox" value="Géographie" checked />
+              <label for="cat-geo" class="category-label">Géographie</label>
+              
+              <input type="checkbox" id="cat-sport" class="category-checkbox" value="Sport" checked />
+              <label for="cat-sport" class="category-label">Sport</label>
+              
+              <input type="checkbox" id="cat-cinema" class="category-checkbox" value="Cinéma" checked />
+              <label for="cat-cinema" class="category-label">Cinéma</label>
+              
+              <input type="checkbox" id="cat-musique" class="category-checkbox" value="Musique" checked />
+              <label for="cat-musique" class="category-label">Musique</label>
+              
+              <input type="checkbox" id="cat-litterature" class="category-checkbox" value="Littérature" checked />
+              <label for="cat-litterature" class="category-label">Littérature</label>
+              
+              <input type="checkbox" id="cat-tech" class="category-checkbox" value="Technologie" checked />
+              <label for="cat-tech" class="category-label">Technologie</label>
+              
+              <input type="checkbox" id="cat-art" class="category-checkbox" value="Art" checked />
+              <label for="cat-art" class="category-label">Art</label>
+              
+              <input type="checkbox" id="cat-nature" class="category-checkbox" value="Nature" checked />
+              <label for="cat-nature" class="category-label">Nature</label>
+              
+              <input type="checkbox" id="cat-cuisine" class="category-checkbox" value="Cuisine" checked />
+              <label for="cat-cuisine" class="category-label">Cuisine</label>
+            </div>
+          </div>
+
+          <button id="create-room" class="btn-primary">🚪 Créer la salle</button>
+        </div>
+
+        <div class="room-list">
+          <h3>Salles disponibles</h3>
+          <div id="rooms-container">
+            <p class="loading">Chargement des salles...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Room -->
+      <div id="room" class="hidden">
+        <div class="controls">
+          <h3 id="room-title">Salle</h3>
+          <div class="player-list">
+            <h4>👥 Joueurs</h4>
+            <div id="players-container"></div>
+          </div>
+          <button id="start-game" class="btn-primary" disabled>🎮 Démarrer le jeu</button>
+          <button id="leave-room" class="btn-secondary">🚪 Quitter la salle</button>
+        </div>
+
+        <div id="game-box" class="hidden">
+          <div id="multi-question-box">
+            <h2 id="multi-question"></h2>
+            <div id="multi-answers"></div>
+          </div>
+          <div id="multi-result" class="hidden"></div>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <div id="question-box" class="hidden">
-    <h2 id="question"></h2>
-    <div id="answers"></div>
-    <button id="show-answer">Voir la réponse</button>
-    <p id="solution" class="hidden"></p>
-  </div>
-
+  <script src="/socket.io/socket.io.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
