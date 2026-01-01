@@ -326,9 +326,18 @@ socket.on('game-ended', (results) => {
   multiResultEl.classList.remove('hidden');
 });
 
-// Refresh rooms list periodically
+socket.on('room-deleted', (data) => {
+  alert(data.message);
+  roomView.classList.add('hidden');
+  lobby.classList.remove('hidden');
+  document.getElementById('game-box').classList.add('hidden');
+  currentRoom = null;
+  loadRooms();
+});
+
+// Refresh rooms list periodically (every 1 second)
 setInterval(() => {
   if (!lobby.classList.contains('hidden')) {
     loadRooms();
   }
-}, 5000);
+}, 1000);
