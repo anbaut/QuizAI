@@ -124,10 +124,14 @@ setPlayerNameBtn.onclick = () => {
 const createRoomBtn = document.getElementById('create-room');
 const roomNameInput = document.getElementById('room-name');
 const roomDifficultySelect = document.getElementById('room-difficulty');
+const roomQuestionsInput = document.getElementById('room-questions');
+const roomTimerInput = document.getElementById('room-timer');
 
 createRoomBtn.onclick = () => {
   const roomName = roomNameInput.value.trim() || 'Salle de quiz';
   const difficulty = roomDifficultySelect.value;
+  const maxQuestions = parseInt(roomQuestionsInput.value) || 5;
+  const timerDuration = parseInt(roomTimerInput.value) || 20;
   
   // Get selected categories
   const selectedCategories = [];
@@ -143,7 +147,9 @@ createRoomBtn.onclick = () => {
   socket.emit('create-room', {
     name: roomName,
     difficulty: difficulty,
-    categories: selectedCategories
+    categories: selectedCategories,
+    maxQuestions: maxQuestions,
+    timerDuration: timerDuration
   });
 };
 
@@ -237,6 +243,53 @@ const multiQuestionBox = document.getElementById('multi-question-box');
 const multiQuestionEl = document.getElementById('multi-question');
 const multiAnswersEl = document.getElementById('multi-answers');
 const multiResultEl = document.getElementById('multi-result');
+const timerDisplay = document.getElementById('timer-display');
+const timerBar = document.getElementById('timer-bar');
+const timerContainer = document.getElementById('timer-container');
+
+let timerInterval = null;
+let currentTimerDuration = 20;
+
+function startTimer(duration) {
+  currentTimerDuration = duration;
+  let timeRemaining = duration;
+  timerDisplay.textContent = timeRemaining;
+  timerBar.style.width = '100%';
+  timerBar.className = 'timer-bar';
+  timerDisplay.className = 'timer-display';
+  
+  if (timerInterval) {
+    clearInterval(timerInterval);
+  }
+  
+  timerInterval = setInterval(() => {
+    timeRemaining--;
+    timerDisplay.textContent = timeRemaining;
+    
+    const percentage = (timeRemaining / currentTimerDuration) * 100;
+    timerBar.style.width = percentage + '%';
+    
+    // Change color based on time remaining
+    if (timeRemaining <= 5) {
+      timerDisplay.className = 'timer-display danger';
+      timerBar.className = 'timer-bar danger';
+    } else if (timeRemaining <= 10) {
+      timerDisplay.className = 'timer-display warning';
+      timerBar.className = 'timer-bar warning';
+    }
+    
+    if (timeRemaining <= 0) {
+      clearInterval(timerInterval);
+    }
+  }, 1000);
+}
+
+function stopTimer() {
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+}
 
 startGameBtn.onclick = () => {
   socket.emit('start-game');
@@ -246,12 +299,18 @@ socket.on('game-started', () => {
   gameBox.classList.remove('hidden');
   startGameBtn.disabled = true;
   multiResultEl.classList.add('hidden');
+  timerContainer.classList.remove('hidden');
 });
 
 socket.on('new-question', (question) => {
   multiResultEl.classList.add('hidden');
   multiQuestionEl.textContent = question.question;
   multiAnswersEl.innerHTML = '';
+  
+  // Start timer
+  if (question.timerDuration) {
+    startTimer(question.timerDuration);
+  }
 
   if (question.type === 'qcm') {
     question.choices.forEach(choice => {
@@ -265,6 +324,7 @@ socket.on('new-question', (question) => {
         });
         div.classList.add('selected');
         socket.emit('submit-answer', choice);
+        stopTimer();
       };
       multiAnswersEl.appendChild(div);
     });
@@ -281,6 +341,7 @@ socket.on('new-question', (question) => {
         socket.emit('submit-answer', input.value.trim());
         input.disabled = true;
         submitBtn.disabled = true;
+        stopTimer();
       }
     };
     multiAnswersEl.appendChild(input);
@@ -309,6 +370,7 @@ socket.on('answer-result', (result) => {
 });
 
 socket.on('game-ended', (results) => {
+  stopTimer();
   gameBox.classList.add('hidden');
   startGameBtn.disabled = false;
   

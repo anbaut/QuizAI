@@ -385,6 +385,90 @@ input[type="text"].answer-input {
   margin-bottom: 20px;
 }
 
+.timer-container {
+  background: white;
+  padding: 20px;
+  border-radius: 15px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+  text-align: center;
+  animation: slideIn 0.4s ease;
+}
+
+.timer-label {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 10px;
+}
+
+.timer-display {
+  font-size: 3.5rem;
+  font-weight: 700;
+  color: #667eea;
+  text-shadow: 2px 2px 4px rgba(102, 126, 234, 0.3);
+  margin-bottom: 15px;
+  font-family: 'Courier New', monospace;
+}
+
+.timer-display.warning {
+  color: #f39c12;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.timer-display.danger {
+  color: #e74c3c;
+  animation: pulse 0.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.timer-bar-container {
+  width: 100%;
+  height: 20px;
+  background: #e0e0e0;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.timer-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  transition: width 0.1s linear;
+  border-radius: 10px;
+}
+
+.timer-bar.warning {
+  background: linear-gradient(90deg, #f39c12 0%, #e67e22 100%);
+}
+
+.timer-bar.danger {
+  background: linear-gradient(90deg, #e74c3c 0%, #c0392b 100%);
+}
+
+input[type="number"] {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+  background: white;
+}
+
+input[type="number"]:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
 @media (max-width: 768px) {
   h1 {
     font-size: 2rem;

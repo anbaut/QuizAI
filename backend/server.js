@@ -3,6 +3,13 @@ import fetch from "node-fetch";
 import cors from "cors";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import fs from "fs";
+import csv from "csv-parser";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 const httpServer = createServer(app);
@@ -22,9 +29,51 @@ const LM_MODEL = "mistral-7b-instruct-v0.3"; // ex: "mistral-7b-instruct"
 
 const LM_URL = "http://localhost:1234/v1/chat/completions";
 
+// Timer configuration
+const QUESTION_TRANSITION_BUFFER_SECONDS = 2; // Buffer time after timer expires before next question
+
 // Store rooms and players
 const rooms = new Map();
 const players = new Map();
+
+// Store questions loaded from CSV
+let questionsDatabase = [];
+
+// Load questions from CSV
+function loadQuestionsFromCSV() {
+  return new Promise((resolve, reject) => {
+    const questions = [];
+    const csvPath = join(__dirname, 'questions.csv');
+    
+    fs.createReadStream(csvPath)
+      .pipe(csv())
+      .on('data', (row) => {
+        questions.push({
+          category: row.category,
+          difficulty: row.difficulty,
+          question: row.question,
+          type: row.type,
+          choices: [row.choice1, row.choice2, row.choice3, row.choice4],
+          answer: row.answer
+        });
+      })
+      .on('end', () => {
+        console.log(`✅ Loaded ${questions.length} questions from CSV`);
+        resolve(questions);
+      })
+      .on('error', (error) => {
+        console.error('❌ Error loading CSV:', error);
+        reject(error);
+      });
+  });
+}
+
+// Initialize questions database
+loadQuestionsFromCSV().then(questions => {
+  questionsDatabase = questions;
+}).catch(err => {
+  console.error('Failed to load questions:', err);
+});
 
 // Broadcast rooms list to all connected clients
 function broadcastRoomsList() {
@@ -160,7 +209,8 @@ io.on('connection', (socket) => {
       gameStarted: false,
       currentQuestion: null,
       questionCount: 0,
-      maxQuestions: 5,
+      maxQuestions: config.maxQuestions || 5,
+      timerDuration: config.timerDuration || 20,
       createdAt: Date.now()
     };
 
@@ -320,32 +370,6 @@ io.on('connection', (socket) => {
 
     // Update room for all players
     io.to(room.id).emit('room-updated', room);
-
-    // Check if all players have answered
-    const allAnswered = room.players.every(p => p.hasAnswered);
-    
-    // If all answered or this is the first answer, schedule next question
-    if (!room.nextQuestionScheduled) {
-      room.nextQuestionScheduled = true;
-      
-      setTimeout(async () => {
-        room.questionCount++;
-        room.nextQuestionScheduled = false;
-        
-        // Reset hasAnswered flag for all players
-        room.players.forEach(p => p.hasAnswered = false);
-        
-        if (room.questionCount >= room.maxQuestions) {
-          // Game ended
-          const results = room.players.sort((a, b) => b.score - a.score);
-          io.to(room.id).emit('game-ended', results);
-          room.gameStarted = false;
-          console.log(`🏆 Jeu terminé dans ${room.name}`);
-        } else {
-          await sendNextQuestion(room);
-        }
-      }, allAnswered ? 2000 : 5000); // 2s if all answered, 5s timeout otherwise
-    }
   });
 
   socket.on('disconnect', () => {
@@ -378,56 +402,57 @@ io.on('connection', (socket) => {
 
 async function sendNextQuestion(room) {
   try {
-    // Pick random category from room's allowed categories
-    const category = room.categories[Math.floor(Math.random() * room.categories.length)];
-    const difficulty = room.difficulty;
-
-    const prompt = `
-Tu es un générateur de questions pour un jeu.
-
-Catégorie : ${category}
-Difficulté : ${difficulty}
-
-Règles :
-- Une seule question
-- Langue : français
-- Si difficulté = Facile ou Moyen → QCM
-- Si difficulté = Difficile → réponse libre
-- Pas d'explications
-- Pas de texte autour du JSON
-
-Réponds STRICTEMENT au format JSON suivant :
-
-{
-  "question": "string",
-  "type": "qcm" ou "text",
-  "choices": ["string"],
-  "answer": "string"
-}
-`;
-
-    const response = await fetch(LM_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: LM_MODEL,
-        messages: [
-          { role: "system", content: "Tu es un assistant de jeu qui génère des questions." },
-          { role: "user", content: prompt }
-        ],
-        temperature: 0.8
-      })
-    });
-
-    const data = await response.json();
-    let content = data.choices?.[0]?.message?.content || "";
-    content = content.replace(/```json/g, "").replace(/```/g, "").trim();
-
-    const question = JSON.parse(content);
-    room.currentQuestion = question;
+    // Filter questions by category and difficulty
+    const availableQuestions = questionsDatabase.filter(q => 
+      room.categories.includes(q.category) && q.difficulty === room.difficulty
+    );
     
-    io.to(room.id).emit('new-question', question);
+    if (availableQuestions.length === 0) {
+      console.error(`❌ No questions found for categories: ${room.categories} and difficulty: ${room.difficulty}`);
+      return;
+    }
+    
+    // Pick a random question
+    const randomIndex = Math.floor(Math.random() * availableQuestions.length);
+    const question = availableQuestions[randomIndex];
+    
+    room.currentQuestion = question;
+    room.questionStartTime = Date.now();
+    
+    io.to(room.id).emit('new-question', {
+      question: question.question,
+      type: question.type,
+      choices: question.choices,
+      timerDuration: room.timerDuration
+    });
+    
     console.log(`❓ Question envoyée dans ${room.name}: ${question.question.substring(0, 50)}...`);
+    
+    // Auto-advance after timer duration + buffer
+    setTimeout(async () => {
+      // Reset hasAnswered flag for all players who haven't answered
+      room.players.forEach(p => {
+        if (!p.hasAnswered) {
+          p.hasAnswered = true; // Mark as "answered" to proceed
+        }
+      });
+      
+      room.questionCount++;
+      room.nextQuestionScheduled = false;
+      
+      // Reset hasAnswered flag for next question
+      room.players.forEach(p => p.hasAnswered = false);
+      
+      if (room.questionCount >= room.maxQuestions) {
+        // Game ended
+        const results = room.players.sort((a, b) => b.score - a.score);
+        io.to(room.id).emit('game-ended', results);
+        room.gameStarted = false;
+        console.log(`🏆 Jeu terminé dans ${room.name}`);
+      } else {
+        await sendNextQuestion(room);
+      }
+    }, (room.timerDuration + QUESTION_TRANSITION_BUFFER_SECONDS) * 1000);
     
   } catch (err) {
     console.error("❌ Erreur génération question:", err);
