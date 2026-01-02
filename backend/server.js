@@ -29,6 +29,9 @@ const LM_MODEL = "mistral-7b-instruct-v0.3"; // ex: "mistral-7b-instruct"
 
 const LM_URL = "http://localhost:1234/v1/chat/completions";
 
+// Timer configuration
+const QUESTION_TRANSITION_BUFFER_SECONDS = 2; // Buffer time after timer expires before next question
+
 // Store rooms and players
 const rooms = new Map();
 const players = new Map();
@@ -425,7 +428,7 @@ async function sendNextQuestion(room) {
     
     console.log(`❓ Question envoyée dans ${room.name}: ${question.question.substring(0, 50)}...`);
     
-    // Auto-advance after timer duration + 2 seconds buffer
+    // Auto-advance after timer duration + buffer
     setTimeout(async () => {
       // Reset hasAnswered flag for all players who haven't answered
       room.players.forEach(p => {
@@ -449,7 +452,7 @@ async function sendNextQuestion(room) {
       } else {
         await sendNextQuestion(room);
       }
-    }, (room.timerDuration + 2) * 1000);
+    }, (room.timerDuration + QUESTION_TRANSITION_BUFFER_SECONDS) * 1000);
     
   } catch (err) {
     console.error("❌ Erreur génération question:", err);
