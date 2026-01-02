@@ -1,0 +1,61 @@
+category,difficulty,question,type,choice1,choice2,choice3,choice4,answer
+Culture générale,Facile,Quelle est la capitale de la France ?,qcm,Paris,Lyon,Marseille,Bordeaux,Paris
+Culture générale,Facile,Combien de jours compte une année bissextile ?,qcm,365,366,364,367,366
+Culture générale,Moyen,Quel est le plus grand océan du monde ?,qcm,Océan Atlantique,Océan Indien,Océan Pacifique,Océan Arctique,Océan Pacifique
+Culture générale,Moyen,En quelle année a eu lieu la Révolution française ?,qcm,1789,1799,1776,1815,1789
+Culture générale,Difficile,Quel est le plus petit pays du monde ?,qcm,Monaco,Vatican,San Marin,Liechtenstein,Vatican
+Science,Facile,Combien de planètes compte le système solaire ?,qcm,7,8,9,10,8
+Science,Facile,Quelle est la formule chimique de l'eau ?,qcm,H2O,CO2,O2,H2O2,H2O
+Science,Moyen,Quelle est la vitesse de la lumière dans le vide ?,qcm,300000 km/s,150000 km/s,450000 km/s,200000 km/s,300000 km/s
+Science,Moyen,Quel gaz les plantes absorbent-elles lors de la photosynthèse ?,qcm,Oxygène,Azote,Dioxyde de carbone,Hydrogène,Dioxyde de carbone
+Science,Difficile,Qui a découvert la pénicilline ?,qcm,Louis Pasteur,Alexander Fleming,Marie Curie,Antoine Lavoisier,Alexander Fleming
+Histoire,Facile,Qui était le premier président des États-Unis ?,qcm,George Washington,Thomas Jefferson,Abraham Lincoln,John Adams,George Washington
+Histoire,Facile,En quelle année a eu lieu la chute du mur de Berlin ?,qcm,1989,1991,1987,1985,1989
+Histoire,Moyen,Quel empereur français a été vaincu à Waterloo ?,qcm,Napoléon Bonaparte,Louis XIV,Charlemagne,Louis XVI,Napoléon Bonaparte
+Histoire,Moyen,Quelle civilisation a construit le Machu Picchu ?,qcm,Aztèques,Incas,Mayas,Olmèques,Incas
+Histoire,Difficile,En quelle année a commencé la Première Guerre mondiale ?,qcm,1914,1918,1910,1916,1914
+Géographie,Facile,Quel est le plus long fleuve du monde ?,qcm,Nil,Amazone,Mississippi,Yangtsé,Nil
+Géographie,Facile,Sur quel continent se trouve l'Égypte ?,qcm,Asie,Europe,Afrique,Amérique,Afrique
+Géographie,Moyen,Quelle est la capitale du Japon ?,qcm,Osaka,Kyoto,Tokyo,Hiroshima,Tokyo
+Géographie,Moyen,Combien de pays composent l'Union Européenne ?,qcm,25,27,30,28,27
+Géographie,Difficile,Quel est le point culminant de l'Afrique ?,qcm,Mont Kilimandjaro,Mont Kenya,Mont Elgon,Mont Cameroun,Mont Kilimandjaro
+Sport,Facile,Combien de joueurs composent une équipe de football ?,qcm,11,10,9,12,11
+Sport,Facile,Dans quel sport utilise-t-on une raquette et une balle jaune ?,qcm,Badminton,Tennis,Squash,Ping-pong,Tennis
+Sport,Moyen,Où se sont déroulés les Jeux Olympiques de 2024 ?,qcm,Paris,Tokyo,Londres,Los Angeles,Paris
+Sport,Moyen,Combien de sets faut-il gagner pour remporter un match de tennis masculin en Grand Chelem ?,qcm,2,3,4,5,3
+Sport,Difficile,Quel pays a remporté la première Coupe du Monde de football ?,qcm,Brésil,Argentine,Uruguay,Italie,Uruguay
+Cinéma,Facile,Qui a réalisé le film Titanic ?,qcm,Steven Spielberg,James Cameron,Christopher Nolan,Martin Scorsese,James Cameron
+Cinéma,Facile,Quel est le prénom du personnage principal de Harry Potter ?,qcm,Ron,Harry,Hermione,Drago,Harry
+Cinéma,Moyen,Quel film a remporté l'Oscar du meilleur film en 2020 ?,qcm,1917,Joker,Parasite,Once Upon a Time in Hollywood,Parasite
+Cinéma,Moyen,Quel acteur joue Iron Man dans l'univers Marvel ?,qcm,Chris Evans,Robert Downey Jr.,Chris Hemsworth,Mark Ruffalo,Robert Downey Jr.
+Cinéma,Difficile,Quel réalisateur a créé la saga Star Wars ?,qcm,George Lucas,Steven Spielberg,J.J. Abrams,Ridley Scott,George Lucas
+Musique,Facile,Quel instrument a quatre cordes et se joue avec un archet ?,qcm,Guitare,Violon,Piano,Harpe,Violon
+Musique,Facile,Qui a chanté la chanson Bohemian Rhapsody ?,qcm,The Beatles,Queen,Led Zeppelin,Pink Floyd,Queen
+Musique,Moyen,Quel est le nom du chanteur du groupe U2 ?,qcm,Sting,Bono,Edge,Freddie Mercury,Bono
+Musique,Moyen,Dans quelle ville est né le jazz ?,qcm,New York,Chicago,La Nouvelle-Orléans,Memphis,La Nouvelle-Orléans
+Musique,Difficile,Quel compositeur a écrit Les Quatre Saisons ?,qcm,Mozart,Vivaldi,Bach,Beethoven,Vivaldi
+Littérature,Facile,Qui a écrit Les Misérables ?,qcm,Victor Hugo,Émile Zola,Gustave Flaubert,Alexandre Dumas,Victor Hugo
+Littérature,Facile,Quel est le prénom de l'auteur Camus ?,qcm,Jean-Paul,Albert,Marcel,André,Albert
+Littérature,Moyen,Qui a écrit 1984 ?,qcm,Aldous Huxley,George Orwell,Ray Bradbury,H.G. Wells,George Orwell
+Littérature,Moyen,Quel écrivain français a reçu le prix Nobel de littérature en 2008 ?,qcm,Michel Houellebecq,Patrick Modiano,Jean-Marie Gustave Le Clézio,Annie Ernaux,Jean-Marie Gustave Le Clézio
+Littérature,Difficile,Qui est l'auteur de La Divine Comédie ?,qcm,Dante Alighieri,Pétrarque,Boccace,Machiavel,Dante Alighieri
+Technologie,Facile,Qui est le fondateur de Microsoft ?,qcm,Steve Jobs,Bill Gates,Mark Zuckerberg,Elon Musk,Bill Gates
+Technologie,Facile,Que signifie l'acronyme USB ?,qcm,Universal Serial Bus,Ultra Speed Bus,United System Bus,Universal System Band,Universal Serial Bus
+Technologie,Moyen,En quelle année a été créé le premier iPhone ?,qcm,2005,2007,2009,2010,2007
+Technologie,Moyen,Quel langage de programmation porte le nom d'un serpent ?,qcm,Java,Python,Ruby,Cobra,Python
+Technologie,Difficile,Qui a inventé le World Wide Web ?,qcm,Bill Gates,Steve Jobs,Tim Berners-Lee,Larry Page,Tim Berners-Lee
+Art,Facile,Qui a peint La Joconde ?,qcm,Michel-Ange,Léonard de Vinci,Raphaël,Donatello,Léonard de Vinci
+Art,Facile,Dans quelle ville se trouve le musée du Louvre ?,qcm,Londres,Rome,Paris,Madrid,Paris
+Art,Moyen,Quel peintre est célèbre pour ses tournesols ?,qcm,Monet,Picasso,Van Gogh,Cézanne,Van Gogh
+Art,Moyen,Quel mouvement artistique a été fondé par André Breton ?,qcm,Cubisme,Surréalisme,Impressionnisme,Expressionnisme,Surréalisme
+Art,Difficile,Qui a sculpté Le Penseur ?,qcm,Auguste Rodin,Camille Claudel,Michel-Ange,Donatello,Auguste Rodin
+Nature,Facile,Quel est le plus grand mammifère terrestre ?,qcm,Éléphant,Girafe,Rhinocéros,Hippopotame,Éléphant
+Nature,Facile,Combien de pattes a une araignée ?,qcm,6,8,10,12,8
+Nature,Moyen,Quel arbre produit des glands ?,qcm,Chêne,Hêtre,Bouleau,Érable,Chêne
+Nature,Moyen,Quel est l'animal terrestre le plus rapide ?,qcm,Lion,Guépard,Antilope,Loup,Guépard
+Nature,Difficile,Quel est le nom scientifique de l'être humain ?,qcm,Homo erectus,Homo sapiens,Homo habilis,Homo neanderthalensis,Homo sapiens
+Cuisine,Facile,Quel ingrédient principal compose le guacamole ?,qcm,Tomate,Avocat,Concombre,Poivron,Avocat
+Cuisine,Facile,De quel pays vient le sushi ?,qcm,Chine,Japon,Corée,Thaïlande,Japon
+Cuisine,Moyen,Quelle épice est la plus chère au monde ?,qcm,Vanille,Safran,Cardamome,Cannelle,Safran
+Cuisine,Moyen,Quel fromage est utilisé traditionnellement dans la pizza Margherita ?,qcm,Parmesan,Gorgonzola,Mozzarella,Ricotta,Mozzarella
+Cuisine,Difficile,Quelle ville française est connue pour sa moutarde ?,qcm,Dijon,Lyon,Bordeaux,Lille,Dijon

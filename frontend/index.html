@@ -136,6 +136,16 @@
             </div>
           </div>
 
+          <div class="control-group">
+            <label for="room-questions">Nombre de questions :</label>
+            <input type="number" id="room-questions" min="1" max="50" value="5" />
+          </div>
+
+          <div class="control-group">
+            <label for="room-timer">Temps par question (secondes) :</label>
+            <input type="number" id="room-timer" min="5" max="60" value="20" />
+          </div>
+
           <button id="create-room" class="btn-primary">🚪 Créer la salle</button>
         </div>
 
@@ -160,6 +170,13 @@
         </div>
 
         <div id="game-box" class="hidden">
+          <div id="timer-container" class="timer-container">
+            <div class="timer-label">⏱️ Temps restant</div>
+            <div id="timer-display" class="timer-display">20</div>
+            <div class="timer-bar-container">
+              <div id="timer-bar" class="timer-bar"></div>
+            </div>
+          </div>
           <div id="multi-question-box">
             <h2 id="multi-question"></h2>
             <div id="multi-answers"></div>
