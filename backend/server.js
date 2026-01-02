@@ -145,6 +145,9 @@ io.on('connection', (socket) => {
   });
 
   socket.on('create-room', (config) => {
+    const player = players.get(socket.id);
+    if (!player) return;
+
     const roomId = `room-${Date.now()}`;
     const room = {
       id: roomId,
@@ -162,15 +165,25 @@ io.on('connection', (socket) => {
     };
 
     rooms.set(roomId, room);
-    socket.emit('room-created', room);
     
-    // Auto-join creator
-    socket.emit('join-room', roomId);
+    // Auto-join creator directly
+    socket.join(roomId);
+    player.roomId = roomId;
+    player.score = 0;
+    
+    room.players.push({
+      id: player.id,
+      name: player.name,
+      score: player.score,
+      hasAnswered: false
+    });
+
+    socket.emit('room-joined', room);
     
     // Broadcast updated rooms list to all clients
     broadcastRoomsList();
     
-    console.log(`🚪 Salle créée: ${config.name} (${roomId})`);
+    console.log(`🚪 Salle créée: ${config.name} (${roomId}) par ${player.name}`);
   });
 
   socket.on('get-rooms', () => {
