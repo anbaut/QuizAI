@@ -366,6 +366,8 @@ io.on('connection', (socket) => {
     
     roomPlayer.hasAnswered = true;
 
+    // Check answer against the original correct answer (not shuffled)
+    // The user's clicked choice is compared to question.answer which is always the first choice from CSV
     const correct = checkAnswer(answer, room.currentQuestion.answer);
     
     if (correct) {
@@ -459,6 +461,7 @@ async function sendNextQuestion(room) {
     const question = availableQuestions[randomIndex];
     
     // Shuffle the choices (first answer is always correct in CSV)
+    // Note: question.answer remains unchanged and points to the correct answer
     const shuffledChoices = shuffleArray(question.choices);
     
     room.currentQuestion = {

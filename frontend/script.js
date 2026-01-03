@@ -159,6 +159,16 @@ createRoomBtn.onclick = () => {
 // Room list
 const roomsContainer = document.getElementById('rooms-container');
 
+// Language flags mapping
+const languageFlags = {
+  'fr': '🇫🇷',
+  'en': '🇬🇧',
+  'de': '🇩🇪',
+  'es': '🇪🇸',
+  'it': '🇮🇹',
+  'nl': '🇳🇱'
+};
+
 function loadRooms() {
   socket.emit('get-rooms');
 }
@@ -174,14 +184,6 @@ socket.on('rooms-list', (rooms) => {
     const roomDiv = document.createElement('div');
     roomDiv.className = 'room-item';
     
-    const languageFlags = {
-      'fr': '🇫🇷',
-      'en': '🇬🇧',
-      'de': '🇩🇪',
-      'es': '🇪🇸',
-      'it': '🇮🇹',
-      'nl': '🇳🇱'
-    };
     const languageFlag = languageFlags[room.language] || '🌐';
     
     roomDiv.innerHTML = `
