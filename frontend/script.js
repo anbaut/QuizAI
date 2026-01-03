@@ -124,12 +124,14 @@ setPlayerNameBtn.onclick = () => {
 const createRoomBtn = document.getElementById('create-room');
 const roomNameInput = document.getElementById('room-name');
 const roomDifficultySelect = document.getElementById('room-difficulty');
+const roomLanguageSelect = document.getElementById('room-language');
 const roomQuestionsInput = document.getElementById('room-questions');
 const roomTimerInput = document.getElementById('room-timer');
 
 createRoomBtn.onclick = () => {
   const roomName = roomNameInput.value.trim() || 'Salle de quiz';
   const difficulty = roomDifficultySelect.value;
+  const language = roomLanguageSelect.value;
   const maxQuestions = parseInt(roomQuestionsInput.value) || 5;
   const timerDuration = parseInt(roomTimerInput.value) || 20;
   
@@ -147,6 +149,7 @@ createRoomBtn.onclick = () => {
   socket.emit('create-room', {
     name: roomName,
     difficulty: difficulty,
+    language: language,
     categories: selectedCategories,
     maxQuestions: maxQuestions,
     timerDuration: timerDuration
@@ -170,10 +173,21 @@ socket.on('rooms-list', (rooms) => {
   rooms.forEach(room => {
     const roomDiv = document.createElement('div');
     roomDiv.className = 'room-item';
+    
+    const languageFlags = {
+      'fr': '🇫🇷',
+      'en': '🇬🇧',
+      'de': '🇩🇪',
+      'es': '🇪🇸',
+      'it': '🇮🇹',
+      'nl': '🇳🇱'
+    };
+    const languageFlag = languageFlags[room.language] || '🌐';
+    
     roomDiv.innerHTML = `
       <div class="room-info">
         <h4>${room.name}</h4>
-        <p>👥 ${room.players}/${room.maxPlayers} joueurs | 🎯 ${room.difficulty} | 📚 ${room.categories.length} catégories</p>
+        <p>👥 ${room.players}/${room.maxPlayers} joueurs | 🎯 ${room.difficulty} | ${languageFlag} ${room.language.toUpperCase()} | 📚 ${room.categories.length} catégories</p>
       </div>
       <button class="btn-join" onclick="joinRoom('${room.id}')">Rejoindre</button>
     `;
@@ -363,15 +377,35 @@ socket.on('new-question', (question) => {
 
 socket.on('answer-result', (result) => {
   multiResultEl.classList.remove('hidden');
+  
+  let additionalInfoHtml = '';
+  if (result.additionalInfo) {
+    additionalInfoHtml = `<div style="margin-top: 15px; padding: 15px; background: #e7f3ff; border-left: 4px solid #2196F3; border-radius: 5px;">
+      <strong>ℹ️ Info complémentaire :</strong><br>
+      ${result.additionalInfo}
+    </div>`;
+  }
+  
+  let sourceHtml = '';
+  if (result.sourceUrl) {
+    sourceHtml = `<div style="margin-top: 10px; font-size: 0.9em;">
+      <a href="${result.sourceUrl}" target="_blank" style="color: #2196F3; text-decoration: none;">📚 Source</a>
+    </div>`;
+  }
+  
   if (result.correct) {
     multiResultEl.innerHTML = `<div style="background: #d4edda; color: #155724; padding: 20px; border-radius: 10px; text-align: center; font-weight: 600;">
       ✅ Bonne réponse ! +10 points<br>
       Réponse correcte : ${result.correctAnswer}
+      ${additionalInfoHtml}
+      ${sourceHtml}
     </div>`;
   } else {
     multiResultEl.innerHTML = `<div style="background: #f8d7da; color: #721c24; padding: 20px; border-radius: 10px; text-align: center; font-weight: 600;">
       ❌ Mauvaise réponse<br>
       Réponse correcte : ${result.correctAnswer}
+      ${additionalInfoHtml}
+      ${sourceHtml}
     </div>`;
   }
   
