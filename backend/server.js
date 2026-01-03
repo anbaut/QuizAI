@@ -274,8 +274,14 @@ io.on('connection', (socket) => {
   });
 
   socket.on('join-room', (data) => {
-    const roomId = typeof data === 'string' ? data : data.roomId;
-    const password = typeof data === 'object' ? data.password : null;
+    // Handle both legacy string format (just roomId) and new object format (roomId + password)
+    const roomId = typeof data === 'string' ? data : (data && data.roomId ? data.roomId : null);
+    const password = typeof data === 'object' && data ? data.password : null;
+    
+    if (!roomId) {
+      socket.emit('join-error', { message: 'ID de salle invalide', requiresPassword: false });
+      return;
+    }
     
     const room = rooms.get(roomId);
     const player = players.get(socket.id);
@@ -322,8 +328,8 @@ io.on('connection', (socket) => {
     player.roomId = roomId;
     player.lastRoomId = roomId; // Track last room for disconnection handling
     
-    // If game already started, join with score 0
-    const initialScore = room.gameStarted ? 0 : 0;
+    // Initialize score to 0
+    const initialScore = 0;
     player.score = initialScore;
     
     room.players.push({

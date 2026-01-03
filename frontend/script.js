@@ -274,10 +274,6 @@ window.joinRoom = (roomId, hasPassword) => {
 // Handle join errors
 socket.on('join-error', (error) => {
   alert(error.message);
-  if (error.requiresPassword) {
-    // Retry with password prompt
-    // The user will need to click join again
-  }
 });
 
 // Room view
