@@ -134,6 +134,21 @@ select:focus, input[type="text"]:focus {
   border-color: #667eea;
 }
 
+input[type="password"] {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+  background: white;
+}
+
+input[type="password"]:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
 .category-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -355,14 +370,45 @@ input[type="text"].answer-input {
   transform: translateX(5px);
 }
 
+.room-item.last-room {
+  border: 2px solid #ffc107;
+  background: linear-gradient(90deg, #fff9e6 0%, #f8f9fa 100%);
+  box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
+}
+
+.room-item.game-started {
+  border: 2px solid #17a2b8;
+  background: linear-gradient(90deg, #e6f7f9 0%, #f8f9fa 100%);
+}
+
+.last-room-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  background: #ffc107;
+  color: #333;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
 .room-info h4 {
   color: #333;
   margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .room-info p {
   color: #666;
   font-size: 0.9rem;
+}
+
+.room-settings-info {
+  color: #999;
+  font-size: 0.85rem;
+  margin-top: 5px;
 }
 
 .btn-join {

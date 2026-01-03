@@ -163,11 +163,19 @@
             <input type="number" id="room-timer" min="5" max="60" value="20" />
           </div>
 
+          <div class="control-group">
+            <label for="room-password">Mot de passe (optionnel) :</label>
+            <input type="password" id="room-password" placeholder="Laisser vide pour pas de mot de passe" />
+          </div>
+
           <button id="create-room" class="btn-primary">🚪 Créer la salle</button>
         </div>
 
         <div class="room-list">
           <h3>Salles disponibles</h3>
+          <div class="control-group">
+            <input type="text" id="room-search" placeholder="🔍 Rechercher une salle..." />
+          </div>
           <div id="rooms-container">
             <p class="loading">Chargement des salles...</p>
           </div>
