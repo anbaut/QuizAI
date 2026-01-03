@@ -46,16 +46,23 @@ function loadQuestionsFromCSV() {
     const csvPath = join(__dirname, 'questions.csv');
     
     fs.createReadStream(csvPath)
-      .pipe(csv())
+      .pipe(csv({ headers: false }))
       .on('data', (row) => {
-        questions.push({
-          category: row.category,
-          difficulty: row.difficulty,
-          question: row.question,
-          type: row.type,
-          choices: [row.choice1, row.choice2, row.choice3, row.choice4],
-          answer: row.answer
-        });
+        // CSV structure: id, lang, question, answer1, answer2, answer3, answer4, difficulty, info, url
+        const rowArray = Object.values(row);
+        if (rowArray.length >= 9) {
+          questions.push({
+            id: rowArray[0],
+            language: rowArray[1],
+            question: rowArray[2],
+            choices: [rowArray[3], rowArray[4], rowArray[5], rowArray[6]], // First choice is always correct
+            answer: rowArray[3], // First choice is the correct answer
+            difficulty: rowArray[7],
+            additionalInfo: rowArray[8],
+            sourceUrl: rowArray[9] || '',
+            category: 'Culture générale' // All questions are general knowledge
+          });
+        }
       })
       .on('end', () => {
         console.log(`✅ Loaded ${questions.length} questions from CSV`);
@@ -81,6 +88,7 @@ function broadcastRoomsList() {
     id: room.id,
     name: room.name,
     difficulty: room.difficulty,
+    language: room.language,
     categories: room.categories,
     players: room.players.length,
     maxPlayers: room.maxPlayers,
@@ -203,6 +211,7 @@ io.on('connection', (socket) => {
       name: config.name,
       difficulty: config.difficulty,
       categories: config.categories,
+      language: config.language || 'fr', // Default to French
       host: socket.id,
       players: [],
       maxPlayers: 10,
@@ -233,7 +242,7 @@ io.on('connection', (socket) => {
     // Broadcast updated rooms list to all clients
     broadcastRoomsList();
     
-    console.log(`🚪 Salle créée: ${config.name} (${roomId}) par ${player.name}`);
+    console.log(`🚪 Salle créée: ${config.name} (${roomId}) par ${player.name} - Langue: ${room.language}`);
   });
 
   socket.on('get-rooms', () => {
@@ -241,6 +250,7 @@ io.on('connection', (socket) => {
       id: room.id,
       name: room.name,
       difficulty: room.difficulty,
+      language: room.language,
       categories: room.categories,
       players: room.players.length,
       maxPlayers: room.maxPlayers,
@@ -356,6 +366,8 @@ io.on('connection', (socket) => {
     
     roomPlayer.hasAnswered = true;
 
+    // Check answer against the original correct answer (not shuffled)
+    // The user's clicked choice is compared to question.answer which is always the first choice from CSV
     const correct = checkAnswer(answer, room.currentQuestion.answer);
     
     if (correct) {
@@ -365,7 +377,9 @@ io.on('connection', (socket) => {
 
     socket.emit('answer-result', {
       correct: correct,
-      correctAnswer: room.currentQuestion.answer
+      correctAnswer: room.currentQuestion.answer,
+      additionalInfo: room.currentQuestion.additionalInfo,
+      sourceUrl: room.currentQuestion.sourceUrl
     });
 
     // Update room for all players
@@ -418,15 +432,27 @@ io.on('connection', (socket) => {
   });
 });
 
+// Shuffle array randomly
+function shuffleArray(array) {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 async function sendNextQuestion(room) {
   try {
-    // Filter questions by category and difficulty
+    // Filter questions by language, category and difficulty
     const availableQuestions = questionsDatabase.filter(q => 
-      room.categories.includes(q.category) && q.difficulty === room.difficulty
+      room.categories.includes(q.category) && 
+      q.difficulty === room.difficulty &&
+      q.language === (room.language || 'fr') // Default to French if not specified
     );
     
     if (availableQuestions.length === 0) {
-      console.error(`❌ No questions found for categories: ${room.categories} and difficulty: ${room.difficulty}`);
+      console.error(`❌ No questions found for categories: ${room.categories}, difficulty: ${room.difficulty}, language: ${room.language || 'fr'}`);
       return;
     }
     
@@ -434,14 +460,23 @@ async function sendNextQuestion(room) {
     const randomIndex = Math.floor(Math.random() * availableQuestions.length);
     const question = availableQuestions[randomIndex];
     
-    room.currentQuestion = question;
+    // Shuffle the choices (first answer is always correct in CSV)
+    // Note: question.answer remains unchanged and points to the correct answer
+    const shuffledChoices = shuffleArray(question.choices);
+    
+    room.currentQuestion = {
+      ...question,
+      shuffledChoices: shuffledChoices
+    };
     room.questionStartTime = Date.now();
     
     io.to(room.id).emit('new-question', {
       question: question.question,
-      type: question.type,
-      choices: question.choices,
-      timerDuration: room.timerDuration
+      type: 'qcm', // All questions are multiple choice
+      choices: shuffledChoices,
+      timerDuration: room.timerDuration,
+      additionalInfo: question.additionalInfo,
+      sourceUrl: question.sourceUrl
     });
     
     console.log(`❓ Question envoyée dans ${room.name}: ${question.question.substring(0, 50)}...`);
