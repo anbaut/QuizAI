@@ -239,6 +239,7 @@ leaveRoomBtn.onclick = () => {
 
 // Game logic
 const gameBox = document.getElementById('game-box');
+const roomControls = document.getElementById('room-controls');
 const multiQuestionBox = document.getElementById('multi-question-box');
 const multiQuestionEl = document.getElementById('multi-question');
 const multiAnswersEl = document.getElementById('multi-answers');
@@ -246,6 +247,10 @@ const multiResultEl = document.getElementById('multi-result');
 const timerDisplay = document.getElementById('timer-display');
 const timerBar = document.getElementById('timer-bar');
 const timerContainer = document.getElementById('timer-container');
+const gameLeaderboard = document.getElementById('game-leaderboard');
+const chatMessages = document.getElementById('chat-messages');
+const chatInput = document.getElementById('chat-input');
+const chatSendBtn = document.getElementById('chat-send');
 
 let timerInterval = null;
 let currentTimerDuration = 20;
@@ -297,9 +302,11 @@ startGameBtn.onclick = () => {
 
 socket.on('game-started', () => {
   gameBox.classList.remove('hidden');
+  roomControls.classList.add('hidden'); // Hide start/leave buttons during game
   startGameBtn.disabled = true;
   multiResultEl.classList.add('hidden');
   timerContainer.classList.remove('hidden');
+  updateGameLeaderboard(currentRoom.players); // Initialize leaderboard
 });
 
 socket.on('new-question', (question) => {
@@ -324,7 +331,7 @@ socket.on('new-question', (question) => {
         });
         div.classList.add('selected');
         socket.emit('submit-answer', choice);
-        stopTimer();
+        // Don't stop timer - let it continue running
       };
       multiAnswersEl.appendChild(div);
     });
@@ -341,7 +348,7 @@ socket.on('new-question', (question) => {
         socket.emit('submit-answer', input.value.trim());
         input.disabled = true;
         submitBtn.disabled = true;
-        stopTimer();
+        // Don't stop timer - let it continue running
       }
     };
     multiAnswersEl.appendChild(input);
@@ -363,15 +370,17 @@ socket.on('answer-result', (result) => {
     </div>`;
   }
   
-  // Update scores
+  // Update scores and leaderboard
   if (currentRoom) {
     updatePlayersList(currentRoom.players);
+    updateGameLeaderboard(currentRoom.players);
   }
 });
 
 socket.on('game-ended', (results) => {
   stopTimer();
   gameBox.classList.add('hidden');
+  roomControls.classList.remove('hidden'); // Show start/leave buttons again
   startGameBtn.disabled = false;
   
   let resultsHtml = '<div class="controls"><h3>🏆 Résultats finaux</h3>';
@@ -396,6 +405,84 @@ socket.on('room-deleted', (data) => {
   currentRoom = null;
   loadRooms();
 });
+
+// Update game leaderboard with sorted players
+function updateGameLeaderboard(players) {
+  const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+  
+  gameLeaderboard.innerHTML = '';
+  sortedPlayers.forEach((player, index) => {
+    const playerDiv = document.createElement('div');
+    playerDiv.className = `leaderboard-player position-${index + 1}`;
+    playerDiv.setAttribute('data-player-id', player.id);
+    
+    const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
+    
+    playerDiv.innerHTML = `
+      <div class="leaderboard-player-info">
+        <span class="leaderboard-position">${medal || (index + 1)}</span>
+        <span class="leaderboard-name">${player.name}</span>
+      </div>
+      <span class="leaderboard-score">${player.score}</span>
+    `;
+    
+    gameLeaderboard.appendChild(playerDiv);
+  });
+}
+
+// Chat functionality
+chatSendBtn.onclick = () => {
+  sendChatMessage();
+};
+
+chatInput.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    sendChatMessage();
+  }
+});
+
+function sendChatMessage() {
+  const message = chatInput.value.trim();
+  if (message && currentRoom) {
+    socket.emit('chat-message', {
+      roomId: currentRoom.id,
+      message: message
+    });
+    chatInput.value = '';
+  }
+}
+
+// Receive chat messages
+socket.on('chat-message', (data) => {
+  displayChatMessage(data);
+});
+
+function displayChatMessage(data) {
+  const messageDiv = document.createElement('div');
+  messageDiv.className = 'chat-message';
+  
+  const time = new Date(data.timestamp).toLocaleTimeString('fr-FR', { 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  });
+  
+  messageDiv.innerHTML = `
+    <div class="chat-message-header">
+      <span class="chat-message-author">${data.author}</span>
+      <span class="chat-message-time">${time}</span>
+    </div>
+    <div class="chat-message-text">${escapeHtml(data.message)}</div>
+  `;
+  
+  chatMessages.appendChild(messageDiv);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
 
 // Refresh rooms list periodically (every 1 second)
 setInterval(() => {

@@ -30,7 +30,7 @@ const LM_MODEL = "mistral-7b-instruct-v0.3"; // ex: "mistral-7b-instruct"
 const LM_URL = "http://localhost:1234/v1/chat/completions";
 
 // Timer configuration
-const QUESTION_TRANSITION_BUFFER_SECONDS = 2; // Buffer time after timer expires before next question
+const QUESTION_TRANSITION_BUFFER_SECONDS = 3; // Buffer time after timer expires before next question
 
 // Store rooms and players
 const rooms = new Map();
@@ -370,6 +370,24 @@ io.on('connection', (socket) => {
 
     // Update room for all players
     io.to(room.id).emit('room-updated', room);
+  });
+
+  socket.on('chat-message', (data) => {
+    const player = players.get(socket.id);
+    if (!player || !player.roomId) return;
+
+    const room = rooms.get(player.roomId);
+    if (!room) return;
+
+    const chatData = {
+      author: player.name,
+      message: data.message,
+      timestamp: Date.now()
+    };
+
+    // Broadcast message to all players in the room
+    io.to(room.id).emit('chat-message', chatData);
+    console.log(`💬 Chat in ${room.name} - ${player.name}: ${data.message}`);
   });
 
   socket.on('disconnect', () => {

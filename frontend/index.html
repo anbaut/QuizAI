@@ -159,7 +159,7 @@
 
       <!-- Room -->
       <div id="room" class="hidden">
-        <div class="controls">
+        <div class="controls" id="room-controls">
           <h3 id="room-title">Salle</h3>
           <div class="player-list">
             <h4>👥 Joueurs</h4>
@@ -170,18 +170,43 @@
         </div>
 
         <div id="game-box" class="hidden">
-          <div id="timer-container" class="timer-container">
-            <div class="timer-label">⏱️ Temps restant</div>
-            <div id="timer-display" class="timer-display">20</div>
-            <div class="timer-bar-container">
-              <div id="timer-bar" class="timer-bar"></div>
+          <div class="game-layout">
+            <!-- Left Column: Leaderboard -->
+            <div class="game-column leaderboard-column">
+              <div class="leaderboard-container">
+                <h3>🏆 Classement</h3>
+                <div id="game-leaderboard"></div>
+              </div>
+            </div>
+            
+            <!-- Center Column: Main Game Content -->
+            <div class="game-column main-game-column">
+              <div id="timer-container" class="timer-container">
+                <div class="timer-label">⏱️ Temps restant</div>
+                <div id="timer-display" class="timer-display">20</div>
+                <div class="timer-bar-container">
+                  <div id="timer-bar" class="timer-bar"></div>
+                </div>
+              </div>
+              <div id="multi-question-box">
+                <h2 id="multi-question"></h2>
+                <div id="multi-answers"></div>
+              </div>
+              <div id="multi-result" class="hidden"></div>
+            </div>
+            
+            <!-- Right Column: Chat -->
+            <div class="game-column chat-column">
+              <div class="chat-container">
+                <h3>💬 Chat</h3>
+                <div id="chat-messages"></div>
+                <div class="chat-input-container">
+                  <input type="text" id="chat-input" placeholder="Message..." />
+                  <button id="chat-send" class="btn-chat-send">Envoyer</button>
+                </div>
+              </div>
             </div>
           </div>
-          <div id="multi-question-box">
-            <h2 id="multi-question"></h2>
-            <div id="multi-answers"></div>
-          </div>
-          <div id="multi-result" class="hidden"></div>
         </div>
       </div>
     </div>
