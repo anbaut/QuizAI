@@ -141,11 +141,20 @@ select:focus, input[type="text"]:focus {
   margin-bottom: 15px;
 }
 
-.category-checkbox {
+.difficulty-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.category-checkbox,
+.difficulty-checkbox {
   display: none;
 }
 
-.category-label {
+.category-label,
+.difficulty-label {
   display: block;
   padding: 10px 15px;
   background: #f0f0f0;
@@ -157,15 +166,45 @@ select:focus, input[type="text"]:focus {
   font-size: 0.9rem;
 }
 
-.category-checkbox:checked + .category-label {
+.category-checkbox:checked + .category-label,
+.difficulty-checkbox:checked + .difficulty-label {
   background: #667eea;
   color: white;
   border-color: #667eea;
 }
 
-.category-label:hover {
+.category-label:hover,
+.difficulty-label:hover {
   border-color: #667eea;
   transform: translateY(-2px);
+}
+
+.difficulty-label.difficulty-easy {
+  border-color: #28a745;
+}
+
+.difficulty-checkbox:checked + .difficulty-label.difficulty-easy {
+  background: #28a745;
+  border-color: #28a745;
+}
+
+.difficulty-label.difficulty-medium {
+  border-color: #ffc107;
+}
+
+.difficulty-checkbox:checked + .difficulty-label.difficulty-medium {
+  background: #ffc107;
+  color: #333;
+  border-color: #ffc107;
+}
+
+.difficulty-label.difficulty-hard {
+  border-color: #dc3545;
+}
+
+.difficulty-checkbox:checked + .difficulty-label.difficulty-hard {
+  background: #dc3545;
+  border-color: #dc3545;
 }
 
 button {
@@ -349,6 +388,20 @@ input[type="text"].answer-input {
   margin-bottom: 20px;
 }
 
+.room-settings {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  margin-top: 15px;
+}
+
+.room-settings h4 {
+  color: #333;
+  margin-bottom: 15px;
+  font-size: 1.1rem;
+}
+
 .player-list h4 {
   color: #333;
   margin-bottom: 10px;
@@ -364,9 +417,19 @@ input[type="text"].answer-input {
   align-items: center;
 }
 
+.player-item.disconnected {
+  opacity: 0.5;
+  background: #e0e0e0;
+}
+
 .player-name {
   font-weight: 600;
   color: #333;
+}
+
+.player-name.disconnected {
+  color: #999;
+  text-decoration: line-through;
 }
 
 .player-score {
@@ -489,6 +552,35 @@ input[type="number"]:focus {
 }
 
 /* Game Layout - 3 columns */
+.game-header {
+  background: white;
+  border-radius: 15px;
+  padding: 15px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-leave-game {
+  padding: 10px 20px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  width: auto;
+  font-size: 1rem;
+}
+
+.btn-leave-game:hover {
+  background: #c82333;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(220, 53, 69, 0.4);
+}
+
 .game-layout {
   display: grid;
   grid-template-columns: 250px 1fr 300px;
@@ -538,6 +630,16 @@ input[type="number"]:focus {
   border-left: 4px solid transparent;
 }
 
+.leaderboard-player.disconnected {
+  opacity: 0.5;
+  background: #e0e0e0;
+}
+
+.leaderboard-name.disconnected {
+  color: #999;
+  text-decoration: line-through;
+}
+
 .leaderboard-player.position-1 {
   border-left-color: #ffd700;
   background: linear-gradient(90deg, #fff9e6 0%, #f8f9fa 100%);
@@ -580,6 +682,32 @@ input[type="number"]:focus {
 /* Main Game Column */
 .main-game-column {
   min-width: 0;
+}
+
+/* Difficulty Badge */
+.difficulty-badge {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.difficulty-badge.easy {
+  background: #28a745;
+  color: white;
+}
+
+.difficulty-badge.medium {
+  background: #ffc107;
+  color: #333;
+}
+
+.difficulty-badge.hard {
+  background: #dc3545;
+  color: white;
 }
 
 /* Chat Column */

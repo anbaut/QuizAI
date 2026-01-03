@@ -87,7 +87,7 @@ function broadcastRoomsList() {
   const roomsList = Array.from(rooms.values()).map(room => ({
     id: room.id,
     name: room.name,
-    difficulty: room.difficulty,
+    difficulties: room.difficulties || [room.difficulty], // Support both formats
     language: room.language,
     categories: room.categories,
     players: room.players.length,
@@ -209,7 +209,7 @@ io.on('connection', (socket) => {
     const room = {
       id: roomId,
       name: config.name,
-      difficulty: config.difficulty,
+      difficulties: config.difficulties || [config.difficulty], // Support both array and single value for backward compatibility
       categories: config.categories,
       language: config.language || 'fr', // Default to French
       host: socket.id,
@@ -234,7 +234,8 @@ io.on('connection', (socket) => {
       id: player.id,
       name: player.name,
       score: player.score,
-      hasAnswered: false
+      hasAnswered: false,
+      connected: true
     });
 
     socket.emit('room-joined', room);
@@ -249,7 +250,7 @@ io.on('connection', (socket) => {
     const roomsList = Array.from(rooms.values()).map(room => ({
       id: room.id,
       name: room.name,
-      difficulty: room.difficulty,
+      difficulties: room.difficulties || [room.difficulty], // Support both formats
       language: room.language,
       categories: room.categories,
       players: room.players.length,
@@ -265,6 +266,21 @@ io.on('connection', (socket) => {
     const player = players.get(socket.id);
 
     if (!room || !player) return;
+
+    // Check if player was previously in this room (reconnection)
+    const existingPlayer = room.players.find(p => p.name === player.name);
+    
+    if (existingPlayer) {
+      // Reconnecting player - restore their data
+      existingPlayer.id = socket.id;
+      existingPlayer.connected = true;
+      player.roomId = roomId;
+      socket.join(roomId);
+      socket.emit('room-joined', room);
+      io.to(roomId).emit('room-updated', room);
+      console.log(`🔄 ${player.name} s'est reconnecté à ${room.name}`);
+      return;
+    }
 
     if (room.players.length >= room.maxPlayers) {
       socket.emit('error', 'Salle pleine');
@@ -288,7 +304,8 @@ io.on('connection', (socket) => {
       id: player.id,
       name: player.name,
       score: player.score,
-      hasAnswered: false
+      hasAnswered: false,
+      connected: true
     });
 
     socket.emit('room-joined', room);
@@ -304,26 +321,38 @@ io.on('connection', (socket) => {
 
     const room = rooms.get(player.roomId);
     if (room) {
-      room.players = room.players.filter(p => p.id !== socket.id);
-      socket.leave(player.roomId);
+      // Find the player in the room
+      const roomPlayer = room.players.find(p => p.id === socket.id);
       
-      // If host left, assign new host or delete room
-      if (room.host === socket.id) {
-        if (room.players.length > 0) {
-          room.host = room.players[0].id;
+      if (room.gameStarted && roomPlayer) {
+        // During game: mark as disconnected but keep in the room
+        roomPlayer.connected = false;
+        socket.leave(player.roomId);
+        io.to(player.roomId).emit('room-updated', room);
+        console.log(`👋 ${player.name} s'est déconnecté de ${room.name} (en jeu)`);
+      } else {
+        // Before game: remove completely
+        room.players = room.players.filter(p => p.id !== socket.id);
+        socket.leave(player.roomId);
+        
+        // If host left, assign new host or delete room
+        if (room.host === socket.id) {
+          if (room.players.length > 0) {
+            room.host = room.players[0].id;
+            io.to(player.roomId).emit('room-updated', room);
+            broadcastRoomsList();
+          } else {
+            rooms.delete(player.roomId);
+            console.log(`🚪 Salle supprimée: ${room.name}`);
+            broadcastRoomsList();
+          }
+        } else {
           io.to(player.roomId).emit('room-updated', room);
           broadcastRoomsList();
-        } else {
-          rooms.delete(player.roomId);
-          console.log(`🚪 Salle supprimée: ${room.name}`);
-          broadcastRoomsList();
         }
-      } else {
-        io.to(player.roomId).emit('room-updated', room);
-        broadcastRoomsList();
+        
+        console.log(`👋 ${player.name} a quitté ${room.name}`);
       }
-      
-      console.log(`👋 ${player.name} a quitté ${room.name}`);
     }
     
     player.roomId = null;
@@ -351,6 +380,24 @@ io.on('connection', (socket) => {
     
     // Generate first question
     await sendNextQuestion(room);
+  });
+
+  socket.on('update-room-settings', (settings) => {
+    const player = players.get(socket.id);
+    if (!player || !player.roomId) return;
+
+    const room = rooms.get(player.roomId);
+    if (!room || room.host !== socket.id) return;
+
+    // Update room settings
+    room.difficulties = settings.difficulties;
+    room.categories = settings.categories;
+    room.maxQuestions = settings.maxQuestions;
+    room.timerDuration = settings.timerDuration;
+
+    // Broadcast updated room to all players
+    io.to(room.id).emit('room-updated', room);
+    console.log(`⚙️ Paramètres de ${room.name} mis à jour par ${player.name}`);
   });
 
   socket.on('submit-answer', (answer) => {
@@ -409,20 +456,30 @@ io.on('connection', (socket) => {
     if (player && player.roomId) {
       const room = rooms.get(player.roomId);
       if (room) {
-        room.players = room.players.filter(p => p.id !== socket.id);
+        const roomPlayer = room.players.find(p => p.id === socket.id);
         
-        if (room.host === socket.id) {
-          if (room.players.length > 0) {
-            room.host = room.players[0].id;
+        if (room.gameStarted && roomPlayer) {
+          // During game: mark as disconnected but keep in the room
+          roomPlayer.connected = false;
+          io.to(player.roomId).emit('room-updated', room);
+          console.log(`❌ ${player.name} déconnecté de ${room.name} (en jeu)`);
+        } else {
+          // Before game: remove completely
+          room.players = room.players.filter(p => p.id !== socket.id);
+          
+          if (room.host === socket.id) {
+            if (room.players.length > 0) {
+              room.host = room.players[0].id;
+              io.to(player.roomId).emit('room-updated', room);
+              broadcastRoomsList();
+            } else {
+              rooms.delete(player.roomId);
+              broadcastRoomsList();
+            }
+          } else {
             io.to(player.roomId).emit('room-updated', room);
             broadcastRoomsList();
-          } else {
-            rooms.delete(player.roomId);
-            broadcastRoomsList();
           }
-        } else {
-          io.to(player.roomId).emit('room-updated', room);
-          broadcastRoomsList();
         }
       }
     }
@@ -444,15 +501,18 @@ function shuffleArray(array) {
 
 async function sendNextQuestion(room) {
   try {
-    // Filter questions by language, category and difficulty
+    // Get room difficulties (support both array and single value)
+    const roomDifficulties = room.difficulties || [room.difficulty];
+    
+    // Filter questions by language, category and any of the selected difficulties
     const availableQuestions = questionsDatabase.filter(q => 
       room.categories.includes(q.category) && 
-      q.difficulty === room.difficulty &&
+      roomDifficulties.includes(q.difficulty) &&
       q.language === (room.language || 'fr') // Default to French if not specified
     );
     
     if (availableQuestions.length === 0) {
-      console.error(`❌ No questions found for categories: ${room.categories}, difficulty: ${room.difficulty}, language: ${room.language || 'fr'}`);
+      console.error(`❌ No questions found for categories: ${room.categories}, difficulties: ${roomDifficulties}, language: ${room.language || 'fr'}`);
       return;
     }
     
@@ -476,7 +536,8 @@ async function sendNextQuestion(room) {
       choices: shuffledChoices,
       timerDuration: room.timerDuration,
       additionalInfo: question.additionalInfo,
-      sourceUrl: question.sourceUrl
+      sourceUrl: question.sourceUrl,
+      difficulty: question.difficulty // Send difficulty for display
     });
     
     console.log(`❓ Question envoyée dans ${room.name}: ${question.question.substring(0, 50)}...`);

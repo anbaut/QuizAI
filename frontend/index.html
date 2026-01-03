@@ -87,12 +87,17 @@
           </div>
           
           <div class="control-group">
-            <label for="room-difficulty">Difficulté :</label>
-            <select id="room-difficulty">
-              <option>Débutant</option>
-              <option>Confirmé</option>
-              <option>Expert</option>
-            </select>
+            <label>Difficultés autorisées :</label>
+            <div class="difficulty-grid">
+              <input type="checkbox" id="diff-debutant" class="difficulty-checkbox" value="Débutant" checked />
+              <label for="diff-debutant" class="difficulty-label difficulty-easy">Débutant</label>
+              
+              <input type="checkbox" id="diff-confirme" class="difficulty-checkbox" value="Confirmé" checked />
+              <label for="diff-confirme" class="difficulty-label difficulty-medium">Confirmé</label>
+              
+              <input type="checkbox" id="diff-expert" class="difficulty-checkbox" value="Expert" checked />
+              <label for="diff-expert" class="difficulty-label difficulty-hard">Expert</label>
+            </div>
           </div>
 
           <div class="control-group">
@@ -173,6 +178,80 @@
       <div id="room" class="hidden">
         <div class="controls" id="room-controls">
           <h3 id="room-title">Salle</h3>
+          <button id="toggle-room-settings" class="btn-secondary hidden">⚙️ Modifier les paramètres</button>
+          
+          <!-- Room Settings (Editable for host) -->
+          <div id="room-settings" class="room-settings hidden">
+            <h4>⚙️ Paramètres de la salle</h4>
+            
+            <div class="control-group">
+              <label>Difficultés autorisées :</label>
+              <div class="difficulty-grid">
+                <input type="checkbox" id="edit-diff-debutant" class="edit-difficulty-checkbox" value="Débutant" />
+                <label for="edit-diff-debutant" class="difficulty-label difficulty-easy">Débutant</label>
+                
+                <input type="checkbox" id="edit-diff-confirme" class="edit-difficulty-checkbox" value="Confirmé" />
+                <label for="edit-diff-confirme" class="difficulty-label difficulty-medium">Confirmé</label>
+                
+                <input type="checkbox" id="edit-diff-expert" class="edit-difficulty-checkbox" value="Expert" />
+                <label for="edit-diff-expert" class="difficulty-label difficulty-hard">Expert</label>
+              </div>
+            </div>
+
+            <div class="control-group">
+              <label>Catégories autorisées :</label>
+              <div class="category-grid">
+                <input type="checkbox" id="edit-cat-culture" class="edit-category-checkbox" value="Culture générale" />
+                <label for="edit-cat-culture" class="category-label">Culture générale</label>
+                
+                <input type="checkbox" id="edit-cat-science" class="edit-category-checkbox" value="Science" />
+                <label for="edit-cat-science" class="category-label">Science</label>
+                
+                <input type="checkbox" id="edit-cat-histoire" class="edit-category-checkbox" value="Histoire" />
+                <label for="edit-cat-histoire" class="category-label">Histoire</label>
+                
+                <input type="checkbox" id="edit-cat-geo" class="edit-category-checkbox" value="Géographie" />
+                <label for="edit-cat-geo" class="category-label">Géographie</label>
+                
+                <input type="checkbox" id="edit-cat-sport" class="edit-category-checkbox" value="Sport" />
+                <label for="edit-cat-sport" class="category-label">Sport</label>
+                
+                <input type="checkbox" id="edit-cat-cinema" class="edit-category-checkbox" value="Cinéma" />
+                <label for="edit-cat-cinema" class="category-label">Cinéma</label>
+                
+                <input type="checkbox" id="edit-cat-musique" class="edit-category-checkbox" value="Musique" />
+                <label for="edit-cat-musique" class="category-label">Musique</label>
+                
+                <input type="checkbox" id="edit-cat-litterature" class="edit-category-checkbox" value="Littérature" />
+                <label for="edit-cat-litterature" class="category-label">Littérature</label>
+                
+                <input type="checkbox" id="edit-cat-tech" class="edit-category-checkbox" value="Technologie" />
+                <label for="edit-cat-tech" class="category-label">Technologie</label>
+                
+                <input type="checkbox" id="edit-cat-art" class="edit-category-checkbox" value="Art" />
+                <label for="edit-cat-art" class="category-label">Art</label>
+                
+                <input type="checkbox" id="edit-cat-nature" class="edit-category-checkbox" value="Nature" />
+                <label for="edit-cat-nature" class="category-label">Nature</label>
+                
+                <input type="checkbox" id="edit-cat-cuisine" class="edit-category-checkbox" value="Cuisine" />
+                <label for="edit-cat-cuisine" class="category-label">Cuisine</label>
+              </div>
+            </div>
+
+            <div class="control-group">
+              <label for="edit-room-questions">Nombre de questions :</label>
+              <input type="number" id="edit-room-questions" min="1" max="50" value="5" />
+            </div>
+
+            <div class="control-group">
+              <label for="edit-room-timer">Temps par question (secondes) :</label>
+              <input type="number" id="edit-room-timer" min="5" max="60" value="20" />
+            </div>
+
+            <button id="save-room-settings" class="btn-primary">💾 Enregistrer les paramètres</button>
+          </div>
+          
           <div class="player-list">
             <h4>👥 Joueurs</h4>
             <div id="players-container"></div>
@@ -182,6 +261,9 @@
         </div>
 
         <div id="game-box" class="hidden">
+          <div class="game-header">
+            <button id="leave-room-game" class="btn-leave-game">🚪 Quitter la salle</button>
+          </div>
           <div class="game-layout">
             <!-- Left Column: Leaderboard -->
             <div class="game-column leaderboard-column">
@@ -201,6 +283,7 @@
                 </div>
               </div>
               <div id="multi-question-box">
+                <div id="question-difficulty-badge" class="difficulty-badge hidden"></div>
                 <h2 id="multi-question"></h2>
                 <div id="multi-answers"></div>
               </div>

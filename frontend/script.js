@@ -123,14 +123,12 @@ setPlayerNameBtn.onclick = () => {
 // Room creation
 const createRoomBtn = document.getElementById('create-room');
 const roomNameInput = document.getElementById('room-name');
-const roomDifficultySelect = document.getElementById('room-difficulty');
 const roomLanguageSelect = document.getElementById('room-language');
 const roomQuestionsInput = document.getElementById('room-questions');
 const roomTimerInput = document.getElementById('room-timer');
 
 createRoomBtn.onclick = () => {
   const roomName = roomNameInput.value.trim() || 'Salle de quiz';
-  const difficulty = roomDifficultySelect.value;
   const language = roomLanguageSelect.value;
   const maxQuestions = parseInt(roomQuestionsInput.value) || 5;
   const timerDuration = parseInt(roomTimerInput.value) || 20;
@@ -146,9 +144,20 @@ createRoomBtn.onclick = () => {
     return;
   }
 
+  // Get selected difficulties
+  const selectedDifficulties = [];
+  document.querySelectorAll('.difficulty-checkbox:checked').forEach(cb => {
+    selectedDifficulties.push(cb.value);
+  });
+
+  if (selectedDifficulties.length === 0) {
+    alert('Veuillez sélectionner au moins une difficulté !');
+    return;
+  }
+
   socket.emit('create-room', {
     name: roomName,
-    difficulty: difficulty,
+    difficulties: selectedDifficulties,
     language: language,
     categories: selectedCategories,
     maxQuestions: maxQuestions,
@@ -185,11 +194,12 @@ socket.on('rooms-list', (rooms) => {
     roomDiv.className = 'room-item';
     
     const languageFlag = languageFlags[room.language] || '🌐';
+    const difficultiesText = room.difficulties ? room.difficulties.join(', ') : room.difficulty;
     
     roomDiv.innerHTML = `
       <div class="room-info">
         <h4>${room.name}</h4>
-        <p>👥 ${room.players}/${room.maxPlayers} joueurs | 🎯 ${room.difficulty} | ${languageFlag} ${room.language.toUpperCase()} | 📚 ${room.categories.length} catégories</p>
+        <p>👥 ${room.players}/${room.maxPlayers} joueurs | 🎯 ${difficultiesText} | ${languageFlag} ${room.language.toUpperCase()} | 📚 ${room.categories.length} catégories</p>
       </div>
       <button class="btn-join" onclick="joinRoom('${room.id}')">Rejoindre</button>
     `;
@@ -206,6 +216,10 @@ const roomTitle = document.getElementById('room-title');
 const playersContainer = document.getElementById('players-container');
 const startGameBtn = document.getElementById('start-game');
 const leaveRoomBtn = document.getElementById('leave-room');
+const leaveRoomGameBtn = document.getElementById('leave-room-game');
+const toggleRoomSettingsBtn = document.getElementById('toggle-room-settings');
+const roomSettingsDiv = document.getElementById('room-settings');
+const saveRoomSettingsBtn = document.getElementById('save-room-settings');
 
 socket.on('room-joined', (room) => {
   currentRoom = room;
@@ -214,12 +228,15 @@ socket.on('room-joined', (room) => {
   roomTitle.textContent = `🚪 ${room.name}`;
   updatePlayersList(room.players);
   
-  // Only host can start the game
+  // Show/hide settings button based on host status
   if (room.host === socket.id) {
     startGameBtn.disabled = room.players.length < 1;
+    toggleRoomSettingsBtn.classList.remove('hidden');
+    loadRoomSettings(room);
   } else {
     startGameBtn.disabled = true;
     startGameBtn.textContent = '⏳ En attente de l\'hôte...';
+    toggleRoomSettingsBtn.classList.add('hidden');
   }
 });
 
@@ -234,6 +251,14 @@ socket.on('room-updated', (room) => {
   
   if (room.host === socket.id) {
     startGameBtn.disabled = room.players.length < 1;
+    toggleRoomSettingsBtn.classList.remove('hidden');
+  } else {
+    toggleRoomSettingsBtn.classList.add('hidden');
+  }
+  
+  // Update settings if visible
+  if (!roomSettingsDiv.classList.contains('hidden')) {
+    loadRoomSettings(room);
   }
 });
 
@@ -242,8 +267,15 @@ function updatePlayersList(players) {
   players.forEach(player => {
     const playerDiv = document.createElement('div');
     playerDiv.className = 'player-item';
+    if (!player.connected) {
+      playerDiv.classList.add('disconnected');
+    }
+    
+    const playerNameClass = player.connected ? 'player-name' : 'player-name disconnected';
+    const disconnectedText = !player.connected ? ' (déconnecté)' : '';
+    
     playerDiv.innerHTML = `
-      <span class="player-name">${player.name}${player.id === currentRoom.host ? ' 👑' : ''}</span>
+      <span class="${playerNameClass}">${player.name}${player.id === currentRoom.host ? ' 👑' : ''}${disconnectedText}</span>
       <span class="player-score">${player.score} pts</span>
     `;
     playersContainer.appendChild(playerDiv);
@@ -256,6 +288,82 @@ leaveRoomBtn.onclick = () => {
   lobby.classList.remove('hidden');
   document.getElementById('game-box').classList.add('hidden');
   loadRooms();
+};
+
+leaveRoomGameBtn.onclick = () => {
+  if (confirm('Êtes-vous sûr de vouloir quitter la partie en cours ? Votre score sera conservé si vous revenez.')) {
+    socket.emit('leave-room');
+    roomView.classList.add('hidden');
+    lobby.classList.remove('hidden');
+    document.getElementById('game-box').classList.add('hidden');
+    stopTimer();
+    loadRooms();
+  }
+};
+
+toggleRoomSettingsBtn.onclick = () => {
+  if (roomSettingsDiv.classList.contains('hidden')) {
+    roomSettingsDiv.classList.remove('hidden');
+    toggleRoomSettingsBtn.textContent = '🔼 Masquer les paramètres';
+  } else {
+    roomSettingsDiv.classList.add('hidden');
+    toggleRoomSettingsBtn.textContent = '⚙️ Modifier les paramètres';
+  }
+};
+
+function loadRoomSettings(room) {
+  // Load difficulties
+  const roomDifficulties = room.difficulties || [room.difficulty];
+  document.querySelectorAll('.edit-difficulty-checkbox').forEach(cb => {
+    cb.checked = roomDifficulties.includes(cb.value);
+  });
+  
+  // Load categories
+  document.querySelectorAll('.edit-category-checkbox').forEach(cb => {
+    cb.checked = room.categories.includes(cb.value);
+  });
+  
+  // Load questions and timer
+  document.getElementById('edit-room-questions').value = room.maxQuestions || 5;
+  document.getElementById('edit-room-timer').value = room.timerDuration || 20;
+}
+
+saveRoomSettingsBtn.onclick = () => {
+  // Get selected difficulties
+  const selectedDifficulties = [];
+  document.querySelectorAll('.edit-difficulty-checkbox:checked').forEach(cb => {
+    selectedDifficulties.push(cb.value);
+  });
+
+  if (selectedDifficulties.length === 0) {
+    alert('Veuillez sélectionner au moins une difficulté !');
+    return;
+  }
+
+  // Get selected categories
+  const selectedCategories = [];
+  document.querySelectorAll('.edit-category-checkbox:checked').forEach(cb => {
+    selectedCategories.push(cb.value);
+  });
+
+  if (selectedCategories.length === 0) {
+    alert('Veuillez sélectionner au moins une catégorie !');
+    return;
+  }
+
+  const maxQuestions = parseInt(document.getElementById('edit-room-questions').value) || 5;
+  const timerDuration = parseInt(document.getElementById('edit-room-timer').value) || 20;
+
+  socket.emit('update-room-settings', {
+    roomId: currentRoom.id,
+    difficulties: selectedDifficulties,
+    categories: selectedCategories,
+    maxQuestions: maxQuestions,
+    timerDuration: timerDuration
+  });
+
+  roomSettingsDiv.classList.add('hidden');
+  toggleRoomSettingsBtn.textContent = '⚙️ Modifier les paramètres';
 };
 
 // Game logic
@@ -272,6 +380,7 @@ const gameLeaderboard = document.getElementById('game-leaderboard');
 const chatMessages = document.getElementById('chat-messages');
 const chatInput = document.getElementById('chat-input');
 const chatSendBtn = document.getElementById('chat-send');
+const questionDifficultyBadge = document.getElementById('question-difficulty-badge');
 
 let timerInterval = null;
 let currentTimerDuration = 20;
@@ -334,6 +443,23 @@ socket.on('new-question', (question) => {
   multiResultEl.classList.add('hidden');
   multiQuestionEl.textContent = question.question;
   multiAnswersEl.innerHTML = '';
+  
+  // Display difficulty badge
+  if (question.difficulty) {
+    questionDifficultyBadge.classList.remove('hidden', 'easy', 'medium', 'hard');
+    questionDifficultyBadge.textContent = question.difficulty;
+    
+    // Add color class based on difficulty
+    if (question.difficulty === 'Débutant') {
+      questionDifficultyBadge.classList.add('easy');
+    } else if (question.difficulty === 'Confirmé') {
+      questionDifficultyBadge.classList.add('medium');
+    } else if (question.difficulty === 'Expert') {
+      questionDifficultyBadge.classList.add('hard');
+    }
+  } else {
+    questionDifficultyBadge.classList.add('hidden');
+  }
   
   // Start timer
   if (question.timerDuration) {
@@ -455,14 +581,19 @@ function updateGameLeaderboard(players) {
   sortedPlayers.forEach((player, index) => {
     const playerDiv = document.createElement('div');
     playerDiv.className = `leaderboard-player position-${index + 1}`;
+    if (!player.connected) {
+      playerDiv.classList.add('disconnected');
+    }
     playerDiv.setAttribute('data-player-id', player.id);
     
     const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
+    const nameClass = player.connected ? 'leaderboard-name' : 'leaderboard-name disconnected';
+    const disconnectedText = !player.connected ? ' (déco)' : '';
     
     playerDiv.innerHTML = `
       <div class="leaderboard-player-info">
         <span class="leaderboard-position">${medal || (index + 1)}</span>
-        <span class="leaderboard-name">${player.name}</span>
+        <span class="${nameClass}">${player.name}${disconnectedText}</span>
       </div>
       <span class="leaderboard-score">${player.score}</span>
     `;
