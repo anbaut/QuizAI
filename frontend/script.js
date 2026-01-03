@@ -211,6 +211,11 @@ socket.on('room-updated', (room) => {
   currentRoom = room;
   updatePlayersList(room.players);
   
+  // Update game leaderboard in real-time during gameplay
+  if (room.gameStarted) {
+    updateGameLeaderboard(room.players);
+  }
+  
   if (room.host === socket.id) {
     startGameBtn.disabled = room.players.length < 1;
   }
