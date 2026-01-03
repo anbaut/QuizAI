@@ -126,12 +126,14 @@ const roomNameInput = document.getElementById('room-name');
 const roomLanguageSelect = document.getElementById('room-language');
 const roomQuestionsInput = document.getElementById('room-questions');
 const roomTimerInput = document.getElementById('room-timer');
+const roomPasswordInput = document.getElementById('room-password');
 
 createRoomBtn.onclick = () => {
   const roomName = roomNameInput.value.trim() || 'Salle de quiz';
   const language = roomLanguageSelect.value;
   const maxQuestions = parseInt(roomQuestionsInput.value) || 5;
   const timerDuration = parseInt(roomTimerInput.value) || 20;
+  const password = roomPasswordInput.value.trim() || null;
   
   // Get selected categories
   const selectedCategories = [];
@@ -161,12 +163,22 @@ createRoomBtn.onclick = () => {
     language: language,
     categories: selectedCategories,
     maxQuestions: maxQuestions,
-    timerDuration: timerDuration
+    timerDuration: timerDuration,
+    password: password
   });
 };
 
 // Room list
 const roomsContainer = document.getElementById('rooms-container');
+const roomSearchInput = document.getElementById('room-search');
+
+// Store all rooms for filtering
+let allRooms = [];
+
+// Filter rooms based on search input
+roomSearchInput.addEventListener('input', () => {
+  displayRooms(allRooms);
+});
 
 // Language flags mapping
 const languageFlags = {
@@ -183,33 +195,90 @@ function loadRooms() {
 }
 
 socket.on('rooms-list', (rooms) => {
-  if (rooms.length === 0) {
-    roomsContainer.innerHTML = '<p class="loading">Aucune salle disponible. Créez-en une !</p>';
+  allRooms = rooms;
+  displayRooms(rooms);
+});
+
+function displayRooms(rooms) {
+  const searchTerm = roomSearchInput.value.toLowerCase().trim();
+  
+  // Filter rooms by search term
+  let filteredRooms = rooms;
+  if (searchTerm) {
+    filteredRooms = rooms.filter(room => 
+      room.name.toLowerCase().includes(searchTerm)
+    );
+  }
+  
+  // Sort rooms: last room first, then started games, then others
+  const sortedRooms = [...filteredRooms].sort((a, b) => {
+    // Last room comes first
+    if (a.isLastRoom && !b.isLastRoom) return -1;
+    if (!a.isLastRoom && b.isLastRoom) return 1;
+    
+    // Then started games
+    if (a.gameStarted && !b.gameStarted) return -1;
+    if (!a.gameStarted && b.gameStarted) return 1;
+    
+    return 0;
+  });
+  
+  if (sortedRooms.length === 0) {
+    if (searchTerm) {
+      roomsContainer.innerHTML = '<p class="loading">Aucune salle trouvée pour cette recherche.</p>';
+    } else {
+      roomsContainer.innerHTML = '<p class="loading">Aucune salle disponible. Créez-en une !</p>';
+    }
     return;
   }
 
   roomsContainer.innerHTML = '';
-  rooms.forEach(room => {
+  sortedRooms.forEach(room => {
     const roomDiv = document.createElement('div');
     roomDiv.className = 'room-item';
+    if (room.isLastRoom) {
+      roomDiv.classList.add('last-room');
+    }
+    if (room.gameStarted) {
+      roomDiv.classList.add('game-started');
+    }
     
     const languageFlag = languageFlags[room.language] || '🌐';
     const difficultiesText = room.difficulties ? room.difficulties.join(', ') : room.difficulty;
+    const passwordIcon = room.hasPassword ? '🔒 ' : '';
+    const gameStatus = room.gameStarted ? ' | ⏳ En cours' : '';
+    const lastRoomBadge = room.isLastRoom ? '<span class="last-room-badge">🔄 Votre dernière salle</span>' : '';
     
     roomDiv.innerHTML = `
       <div class="room-info">
-        <h4>${room.name}</h4>
-        <p>👥 ${room.players}/${room.maxPlayers} joueurs | 🎯 ${difficultiesText} | ${languageFlag} ${room.language.toUpperCase()} | 📚 ${room.categories.length} catégories</p>
+        <h4>${passwordIcon}${room.name} ${lastRoomBadge}</h4>
+        <p>👥 ${room.players}/${room.maxPlayers} joueurs | 🎯 ${difficultiesText} | ${languageFlag} ${room.language.toUpperCase()} | 📚 ${room.categories.length} catégories${gameStatus}</p>
+        <p class="room-settings-info">📝 ${room.maxQuestions} questions | ⏱️ ${room.timerDuration}s par question</p>
       </div>
-      <button class="btn-join" onclick="joinRoom('${room.id}')">Rejoindre</button>
+      <button class="btn-join" onclick="joinRoom('${room.id}', ${room.hasPassword})">Rejoindre</button>
     `;
     roomsContainer.appendChild(roomDiv);
   });
-});
+}
 
-window.joinRoom = (roomId) => {
-  socket.emit('join-room', roomId);
+window.joinRoom = (roomId, hasPassword) => {
+  if (hasPassword) {
+    const password = prompt('🔒 Cette salle est protégée par un mot de passe :');
+    if (password === null) return; // User cancelled
+    socket.emit('join-room', { roomId, password });
+  } else {
+    socket.emit('join-room', { roomId });
+  }
 };
+
+// Handle join errors
+socket.on('join-error', (error) => {
+  alert(error.message);
+  if (error.requiresPassword) {
+    // Retry with password prompt
+    // The user will need to click join again
+  }
+});
 
 // Room view
 const roomTitle = document.getElementById('room-title');

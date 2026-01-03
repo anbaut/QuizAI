@@ -92,8 +92,11 @@ function broadcastRoomsList() {
     categories: room.categories,
     players: room.players.length,
     maxPlayers: room.maxPlayers,
-    gameStarted: room.gameStarted
-  })).filter(room => !room.gameStarted);
+    maxQuestions: room.maxQuestions,
+    timerDuration: room.timerDuration,
+    gameStarted: room.gameStarted,
+    hasPassword: !!room.password // Indicate if room is password-protected
+  }));
   
   io.emit('rooms-list', roomsList);
 }
@@ -196,7 +199,8 @@ io.on('connection', (socket) => {
       id: socket.id,
       name: name,
       score: 0,
-      roomId: null
+      roomId: null,
+      lastRoomId: null // Track last room for reconnection
     });
     console.log(`👤 ${name} s'est connecté`);
   });
@@ -220,7 +224,8 @@ io.on('connection', (socket) => {
       questionCount: 0,
       maxQuestions: config.maxQuestions || 5,
       timerDuration: config.timerDuration || 20,
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      password: config.password || null // Optional password
     };
 
     rooms.set(roomId, room);
@@ -246,7 +251,10 @@ io.on('connection', (socket) => {
     console.log(`🚪 Salle créée: ${config.name} (${roomId}) par ${player.name} - Langue: ${room.language}`);
   });
 
-  socket.on('get-rooms', () => {
+  socket.on('get-rooms', (data) => {
+    const player = players.get(socket.id);
+    const lastRoomId = player ? player.lastRoomId : null;
+    
     const roomsList = Array.from(rooms.values()).map(room => ({
       id: room.id,
       name: room.name,
@@ -255,13 +263,20 @@ io.on('connection', (socket) => {
       categories: room.categories,
       players: room.players.length,
       maxPlayers: room.maxPlayers,
-      gameStarted: room.gameStarted
-    })).filter(room => !room.gameStarted);
+      maxQuestions: room.maxQuestions,
+      timerDuration: room.timerDuration,
+      gameStarted: room.gameStarted,
+      hasPassword: !!room.password, // Indicate if room is password-protected
+      isLastRoom: room.id === lastRoomId // Mark if this was the player's last room
+    }));
     
     socket.emit('rooms-list', roomsList);
   });
 
-  socket.on('join-room', (roomId) => {
+  socket.on('join-room', (data) => {
+    const roomId = typeof data === 'string' ? data : data.roomId;
+    const password = typeof data === 'object' ? data.password : null;
+    
     const room = rooms.get(roomId);
     const player = players.get(socket.id);
 
@@ -271,10 +286,11 @@ io.on('connection', (socket) => {
     const existingPlayer = room.players.find(p => p.name === player.name);
     
     if (existingPlayer) {
-      // Reconnecting player - restore their data
+      // Reconnecting player - restore their data (password not required)
       existingPlayer.id = socket.id;
       existingPlayer.connected = true;
       player.roomId = roomId;
+      player.lastRoomId = roomId; // Track last room for disconnection handling
       socket.join(roomId);
       socket.emit('room-joined', room);
       io.to(roomId).emit('room-updated', room);
@@ -282,8 +298,14 @@ io.on('connection', (socket) => {
       return;
     }
 
+    // Check password if room is password-protected
+    if (room.password && room.password !== password) {
+      socket.emit('join-error', { message: 'Mot de passe incorrect', requiresPassword: true });
+      return;
+    }
+
     if (room.players.length >= room.maxPlayers) {
-      socket.emit('error', 'Salle pleine');
+      socket.emit('join-error', { message: 'Salle pleine', requiresPassword: false });
       return;
     }
 
@@ -298,13 +320,17 @@ io.on('connection', (socket) => {
 
     socket.join(roomId);
     player.roomId = roomId;
-    player.score = 0;
+    player.lastRoomId = roomId; // Track last room for disconnection handling
+    
+    // If game already started, join with score 0
+    const initialScore = room.gameStarted ? 0 : 0;
+    player.score = initialScore;
     
     room.players.push({
       id: player.id,
       name: player.name,
-      score: player.score,
-      hasAnswered: false,
+      score: initialScore,
+      hasAnswered: room.gameStarted ? true : false, // If game started, mark as answered to not disrupt current question
       connected: true
     });
 
@@ -312,7 +338,7 @@ io.on('connection', (socket) => {
     io.to(roomId).emit('room-updated', room);
     broadcastRoomsList();
     
-    console.log(`👥 ${player.name} a rejoint ${room.name}`);
+    console.log(`👥 ${player.name} a rejoint ${room.name}${room.gameStarted ? ' (partie en cours)' : ''}`);
   });
 
   socket.on('leave-room', () => {
